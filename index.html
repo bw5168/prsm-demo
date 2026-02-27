@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRSM 選址存活診斷引擎</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:20px;}
+.container{max-width:680px;margin:0 auto;}
+.header{text-align:center;padding:30px 0 20px;}
+.badge{display:inline-block;background:#f59e0b;color:#000;padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:bold;margin-bottom:12px;}
+h1{color:#38bdf8;font-size:1.6rem;margin-bottom:6px;}
+.sub{color:#94a3b8;font-size:0.9rem;}
+.input-card{background:#1e293b;border-radius:12px;padding:20px;margin-bottom:16px;}
+input{width:100%;padding:12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:1rem;margin-bottom:12px;}
+input:focus{outline:none;border-color:#38bdf8;}
+button.main-btn{width:100%;padding:14px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:bold;}
+button.main-btn:hover{background:#0284c7;}
+button.main-btn:disabled{background:#334155;cursor:not-allowed;}
+#result{display:none;}
+.olr-display{text-align:center;padding:24px;background:#1e293b;border-radius:12px;margin-bottom:16px;}
+.olr-num{font-size:3.5rem;font-weight:bold;line-height:1;}
+.olr-label{color:#94a3b8;font-size:0.9rem;margin-top:4px;}
+.status-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-weight:bold;margin-top:10px;font-size:1rem;}
+.safe{color:#22c55e;} .warning{color:#f59e0b;} .danger{color:#ef4444;}
+.bg-safe{background:#052e16;color:#22c55e;}
+.bg-warning{background:#431407;color:#f59e0b;}
+.bg-danger{background:#450a0a;color:#ef4444;}
+.card{background:#1e293b;border-radius:12px;padding:16px;margin-bottom:16px;}
+.card h3{font-size:0.85rem;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #334155;}
+.row:last-child{border-bottom:none;}
+.row-label{color:#94a3b8;font-size:0.9rem;}
+.row-value{font-weight:bold;font-size:0.95rem;}
+.prescription{border-left:4px solid #f59e0b;padding-left:12px;margin-top:8px;font-size:0.9rem;color:#fbbf24;line-height:1.6;}
+.stress-ok{color:#22c55e;} .stress-fail{color:#ef4444;}
+.btn-row{display:flex;gap:10px;margin-top:16px;}
+.btn-secondary{flex:1;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:bold;}
+.btn-map{background:#1d4ed8;color:#fff;}
+.btn-pdf{background:#374151;color:#fff;}
+.zone-tag{display:inline-block;background:#1e3a5f;color:#7dd3fc;padding:2px 10px;border-radius:10px;font-size:0.8rem;margin-left:8px;}
+@media print{.input-card,.btn-row,button{display:none!important;}.container{max-width:100%;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="badge">⭐ 已通過路易莎實際營運數據校準</div>
+    <h1>🏪 PRSM 選址存活診斷引擎</h1>
+    <p class="sub">輸入地址，AI 自動診斷營運風險並提供改善處方</p>
+  </div>
+
+  <div class="input-card">
+    <input id="addr" type="text" placeholder="例：台北市中山區南京東路二段45號">
+    <button class="main-btn" onclick="analyze()">🔍 立即診斷</button>
+  </div>
+
+  <div id="result">
+    <div class="olr-display">
+      <div class="zone-tag" id="r_zone"></div>
+      <div class="olr-num" id="r_olr">-</div>
+      <div class="olr-label">營租比 OLR（安全門檻 ≥ 1.3）</div>
+      <div class="status-badge" id="r_status"></div>
+    </div>
+
+    <div class="card">
+      <h3>📋 生存處方箋</h3>
+      <div class="row"><span class="row-label">建議安全租金</span><span class="row-value safe" id="r_target_rent">-</span></div>
+      <div class="row"><span class="row-label">科學議價空間</span><span class="row-value danger" id="r_nego">-</span></div>
+      <div class="row"><span class="row-label">損益兩平營收目標</span><span class="row-value" id="r_revenue_needed">-</span></div>
+      <div class="prescription" id="r_advice"></div>
+    </div>
+
+    <div class="card">
+      <h3>⚡ 壓力測試（人流降20%）</h3>
+      <div class="row"><span class="row-label">壓力情境 OLR</span><span class="row-value" id="r_stress_olr">-</span></div>
+      <div class="row"><span class="row-label">抗壓評估</span><span class="row-value" id="r_stress_warn">-</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary btn-map" id="mapBtn">📍 查看周邊競爭熱圖</button>
+      <button class="btn-secondary btn-pdf" onclick="window.print()">📥 下載 PDF 報告</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='https://retail-survival-api-172015277195.asia-east1.run.app';
+async function analyze(){
+  const addr=document.getElementById('addr').value.trim();
+  if(!addr){alert('請輸入地址');return;}
+  const btn=document.querySelector('.main-btn');
+  btn.textContent='⏳ AI 診斷中...';btn.disabled=true;
+  try{
+    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr})});
+    const d=await res.json();
+    document.getElementById('r_zone').textContent=d.zone_label||'一般商圈';
+    document.getElementById('r_olr').textContent=d.current_olr;
+    const sc=d.risk_level==='Low'?'bg-safe':d.risk_level==='Medium'?'bg-warning':'bg-danger';
+    document.getElementById('r_status').className='status-badge '+sc;
+    document.getElementById('r_status').textContent=d.status;
+    const p=d.prescription;
+    document.getElementById('r_target_rent').textContent='NT$ '+Number(p.target_safety_rent).toLocaleString();
+    document.getElementById('r_nego').textContent=p.negotiation_percent+' (NT$ '+Number(p.negotiation_margin).toLocaleString()+')';
+    document.getElementById('r_revenue_needed').textContent='NT$ '+Number(p.revenue_needed).toLocaleString();
+    document.getElementById('r_advice').textContent='💡 '+p.advice;
+    const st=d.stress_test;
+    const stEl=document.getElementById('r_stress_olr');
+    stEl.textContent=st.bad_case_olr;
+    stEl.className='row-value '+(st.is_resilient?'stress-ok':'stress-fail');
+    document.getElementById('r_stress_warn').textContent=st.warning;
+    document.getElementById('mapBtn').onclick=()=>{
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(addr)}+咖啡廳`, '_blank');
+    };
+    document.getElementById('result').style.display='block';
+  }catch(e){alert('API連線失敗，請稍後再試');}
+  btn.textContent='🔍 立即診斷';btn.disabled=false;
+}
+</script>
+</body>
+</html>
