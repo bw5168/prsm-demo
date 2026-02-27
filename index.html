@@ -106,7 +106,7 @@ async function analyze(){
     const sc=d.analysis_result.risk_level==='Low'?'bg-safe':d.analysis_result.risk_level==='Medium'?'bg-warning':'bg-danger';
     document.getElementById('r_status').className='status-badge '+sc;
     document.getElementById('r_status').textContent=d.analysis_result.status;
-    const p=d.prescription;
+    const p=d.district_intelligence.prescription;
     document.getElementById('r_target_rent').textContent='NT$ '+Number(p.safe_rent).toLocaleString();
     document.getElementById('r_nego').textContent=p.negotiation_percent+' (NT$ '+Number(p.negotiation_margin).toLocaleString()+')';
     document.getElementById('r_revenue_needed').textContent='NT$ '+Number(p.survival_threshold_revenue).toLocaleString();
