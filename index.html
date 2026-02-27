@@ -101,16 +101,16 @@ async function analyze(){
   try{
     const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr,rent:parseInt(document.getElementById("rent").value)||0,revenue:parseInt(document.getElementById("revenue").value)||0})});
     const d=await res.json();
-    document.getElementById('r_zone').textContent=d.zone_label||'一般商圈';
-    document.getElementById('r_olr').textContent=d.current_olr;
-    const sc=d.risk_level==='Low'?'bg-safe':d.risk_level==='Medium'?'bg-warning':'bg-danger';
+    document.getElementById('r_zone').textContent=d.district_intelligence.commercial_type||'一般商圈';
+    document.getElementById('r_olr').textContent=d.analysis_result.current_olr;
+    const sc=d.analysis_result.risk_level==='Low'?'bg-safe':d.analysis_result.risk_level==='Medium'?'bg-warning':'bg-danger';
     document.getElementById('r_status').className='status-badge '+sc;
-    document.getElementById('r_status').textContent=d.status;
+    document.getElementById('r_status').textContent=d.analysis_result.status;
     const p=d.prescription;
-    document.getElementById('r_target_rent').textContent='NT$ '+Number(p.target_safety_rent).toLocaleString();
+    document.getElementById('r_target_rent').textContent='NT$ '+Number(p.safe_rent).toLocaleString();
     document.getElementById('r_nego').textContent=p.negotiation_percent+' (NT$ '+Number(p.negotiation_margin).toLocaleString()+')';
-    document.getElementById('r_revenue_needed').textContent='NT$ '+Number(p.revenue_needed).toLocaleString();
-    document.getElementById('r_advice').textContent='💡 '+p.advice;
+    document.getElementById('r_revenue_needed').textContent='NT$ '+Number(p.survival_threshold_revenue).toLocaleString();
+    document.getElementById('r_advice').textContent='💡 '+d.recommendation;
     const st=d.stress_test;
     const stEl=document.getElementById('r_stress_olr');
     stEl.textContent=st.bad_case_olr;
