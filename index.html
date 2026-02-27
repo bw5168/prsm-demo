@@ -53,6 +53,8 @@ button.main-btn:disabled{background:#334155;cursor:not-allowed;}
 
   <div class="input-card">
     <input id="addr" type="text" placeholder="例：台北市中山區南京東路二段45號">
+        <input id="rent" type="number" placeholder="月租金（元）例：50000" style="margin-top:8px;">
+        <input id="revenue" type="number" placeholder="預估月營收（元）例：300000" style="margin-top:8px;">
     <button class="main-btn" onclick="analyze()">🔍 立即診斷</button>
   </div>
 
@@ -89,11 +91,15 @@ button.main-btn:disabled{background:#334155;cursor:not-allowed;}
 const API='https://retail-survival-api-172015277195.asia-east1.run.app';
 async function analyze(){
   const addr=document.getElementById('addr').value.trim();
-  if(!addr){alert('請輸入地址');return;}
+  if(!addr){alert("請輸入地址");return;}
+  const rent=parseInt(document.getElementById("rent").value);
+  const revenue=parseInt(document.getElementById("revenue").value);
+  if(!rent||rent<=0){alert("請輸入月租金");return;}
+  if(!revenue||revenue<=0){alert("請輸入預估月營收");return;}
   const btn=document.querySelector('.main-btn');
   btn.textContent='⏳ AI 診斷中...';btn.disabled=true;
   try{
-    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr})});
+    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:addr,rent:parseInt(document.getElementById("rent").value)||0,revenue:parseInt(document.getElementById("revenue").value)||0})});
     const d=await res.json();
     document.getElementById('r_zone').textContent=d.zone_label||'一般商圈';
     document.getElementById('r_olr').textContent=d.current_olr;
